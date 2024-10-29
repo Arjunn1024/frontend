@@ -1,0 +1,375 @@
+npx create-react-app blog-frontend
+cd blog-frontend
+
+// src/components/Header.js
+import React from 'react';
+import './Header.css';
+
+function Header() {
+    return (
+        <header>
+            <h1>My Blog</h1>
+        </header>
+    );
+}
+
+export default Header;
+
+/* src/components/Header.css */
+header {
+    background-color: #282c34;
+    padding: 20px;
+    color: white;
+    text-align: center;
+}
+
+// src/components/BlogList.js
+import React from 'react';
+import './BlogList.css';
+
+function BlogList({ posts }) {
+    return (
+        <div className="blog-list">
+            {posts.map(post => (
+                <div key={post.id} className="blog-post">
+                    <h2>{post.title}</h2>
+                    <p>{post.content}</p>
+                </div>
+            ))}
+        </div>
+    );
+}
+
+export default BlogList;
+
+/* src/components/BlogList.css */
+.blog-list {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.blog-post {
+    border: 1px solid #ddd;
+    padding: 20px;
+    margin: 20px;
+    width: 80%;
+}
+
+// src/components/BlogPost.js
+import React from 'react';
+import './BlogPost.css';
+
+function BlogPost({ post }) {
+    return (
+        <div className="blog-post">
+            <h2>{post.title}</h2>
+            <p>{post.content}</p>
+        </div>
+    );
+}
+
+export default BlogPost;
+
+/* src/components/BlogPost.css */
+.blog-post {
+    border: 1px solid #ddd;
+    padding: 20px;
+    margin: 20px;
+    width: 80%;
+}
+
+// src/components/CreatePost.js
+import React, { useState } from 'react';
+import './CreatePost.css';
+
+function CreatePost({ addPost }) {
+    const [title, setTitle] = useState('');
+    const [content, setContent] = useState('');
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        addPost({ title, content });
+        setTitle('');
+        setContent('');
+    };
+
+    return (
+        <form onSubmit={handleSubmit} className="create-post-form">
+            <input
+                type="text"
+                placeholder="Title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                required
+            />
+            <textarea
+                placeholder="Content"
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                required
+            ></textarea>
+            <button type="submit">Create Post</button>
+        </form>
+    );
+}
+
+export default CreatePost;
+
+/* src/components/CreatePost.css */
+.create-post-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 20px;
+}
+
+.create-post-form input,
+.create-post-form textarea {
+    width: 80%;
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #ddd;
+}
+
+.create-post-form button {
+    padding: 10px 20px;
+    background-color: #282c34;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+// src/App.js
+import React, { useState } from 'react';
+import Header from './components/Header';
+import BlogList from './components/BlogList';
+import CreatePost from './components/CreatePost';
+import './App.css';
+
+function App() {
+    const [posts, setPosts] = useState([]);
+
+    const addPost = (post) => {
+        setPosts([...posts, { ...post, id: posts.length + 1 }]);
+    };
+
+    return (
+        <div className="App">
+            <Header />
+            <CreatePost addPost={addPost} />
+            <BlogList posts={posts} />
+        </div>
+    );
+}
+
+export default App;
+
+/* src/App.css */
+.App {
+    text-align: center;
+    font-family: Arial, sans-serif;
+}
+
+npm start
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+backend/db.js
+
+// backend/db.js
+const { Pool } = require('pg');
+
+const pool = new Pool({
+  user: 'your_db_user',
+  host: 'localhost',
+  database: 'your_db_name',
+  password: 'your_db_password',
+  port: 5432,
+});
+
+module.exports = pool;
+
+
+
+
+
+// backend/server.js
+const express = require('express');
+const pool = require('./db');
+const cors = require('cors');
+const app = express();
+const PORT = 5000;
+
+app.use(cors());
+app.use(express.json());
+
+// Sign-up route
+app.post('/signup', async (req, res) => {
+  const { username, password, email } = req.body;
+  try {
+    const existingUser = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
+    if (existingUser.rows.length > 0) {
+      return res.status(400).json({ message: 'User already exists' });
+    }
+
+    const newUser = await pool.query(
+      'INSERT INTO users (username, password, email) VALUES ($1, $2, $3) RETURNING *',
+      [username, password, email]
+    );
+    res.status(201).json(newUser.rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: 'Error signing up user' });
+  }
+});
+
+// Sign-in route
+app.post('/signin', async (req, res) => {
+  const { username, password } = req.body;
+  try {
+    const user = await pool.query('SELECT * FROM users WHERE username = $1 AND password = $2', [
+      username,
+      password,
+    ]);
+    if (user.rows.length === 0) {
+      return res.status(400).json({ message: 'Invalid credentials' });
+    }
+    res.status(200).json({ message: 'Sign-in successful', user: user.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: 'Error signing in' });
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(Server running on http://localhost:${PORT});
+});
+
+
+CREATE TABLE users (
+  id SERIAL PRIMARY KEY,
+  username VARCHAR(50) UNIQUE NOT NULL,
+  password VARCHAR(50) NOT NULL,
+  email VARCHAR(50) UNIQUE NOT NULL
+);
+
+
+npx create-react-app frontend
+cd frontend
+npm install axios
+
+
+
+
+// frontend/src/SignUp.js
+import React, { useState } from 'react';
+import axios from 'axios';
+
+function SignUp() {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('');
+  const [message, setMessage] = useState('');
+
+  const handleSignUp = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await axios.post('http://localhost:5000/signup', { username, password, email });
+      setMessage('Sign-up successful');
+    } catch (error) {
+      setMessage('Sign-up failed: ' + error.response?.data.message);
+    }
+  };
+
+  return (
+    <div>
+      <h2>Sign Up</h2>
+      <form onSubmit={handleSignUp}>
+        <input type="text" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} required />
+        <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+        <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+        <button type="submit">Sign Up</button>
+      </form>
+      <p>{message}</p>
+    </div>
+  );
+}
+
+export default SignUp;
+
+
+
+// frontend/src/SignIn.js
+import React, { useState } from 'react';
+import axios from 'axios';
+
+function SignIn() {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [message, setMessage] = useState('');
+
+  const handleSignIn = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await axios.post('http://localhost:5000/signin', { username, password });
+      setMessage('Sign-in successful');
+    } catch (error) {
+      setMessage('Sign-in failed: ' + error.response?.data.message);
+    }
+  };
+
+  return (
+    <div>
+      <h2>Sign In</h2>
+      <form onSubmit={handleSignIn}>
+        <input type="text" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} required />
+        <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+        <button type="submit">Sign In</button>
+      </form>
+      <p>{message}</p>
+    </div>
+  );
+}
+
+export default SignIn;
+
+
+
+
+// frontend/src/App.js
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import SignIn from './SignIn';
+import SignUp from './SignUp';
+
+function App() {
+  return (
+    <Router>
+      <nav>
+        <Link to="/signin">Sign In</Link> | <Link to="/signup">Sign Up</Link>
+      </nav>
+      <Routes>
+        <Route path="/signin" element={<SignIn />} />
+        <Route path="/signup" element={<SignUp />} />
+      </Routes>
+    </Router>
+  );
+}
+
+export default App;
